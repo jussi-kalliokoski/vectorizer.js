@@ -27,7 +27,7 @@ function splitImage (img, partCount) {
 
 		parts.push({
 			image: part,
-			amount: part.data.byteLength / 4 / data.length
+			amount: part.data.byteLength / data.length
 		})
 	}
 
@@ -42,7 +42,7 @@ function splitImage (img, partCount) {
 
 	parts.push({
 		image: part,
-		amount: part.data.byteLength / 4 / data.length
+		amount: part.data.byteLength / data.length
 	})
 
 	reportProgress('split', 1.0)
@@ -100,7 +100,10 @@ function onHasPolygons (e) {
 
 	this.polygons = e.data
 
-	reportProgress('polygons', parts.map(getAmount).reduce(sum))
+	reportProgress('polygons', parts
+		.filter(hasPolygons)
+		.map(getAmount)
+		.reduce(sum))
 
 	if (parts.filter(hasPolygons).length !== parts.length) return
 
