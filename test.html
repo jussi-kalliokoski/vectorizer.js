@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<style>
+svg {
+	display: block;
+	border: 1px inset black;
+	margin-bottom: 2px;
+}
+	</style>
+	<script src="svg.js"></script>
+</head>
+<body>
+	<script>
+var w, h
+
+function vectorize () {
+	var c = document.createElement('canvas')
+	w = c.width = this.width
+	h = c.height = this.height
+	var ctx = c.getContext('2d')
+
+	ctx.drawImage(this, 0, 0)
+
+	var imgdata = ctx.getImageData(0, 0, w, h)
+	var worker = new Worker('offloader.js')
+
+	worker.onmessage = function (e) {
+		var msg = e.data
+
+		switch (msg.type) {
+		case 'progress':
+			document.body.innerHTML = 'Operation: ' +
+				JSON.stringify(msg.op) + ' (' +
+				(msg.am*100).toFixed(1) + '% complete)'
+			break
+		case 'ready':
+			document.body.innerHTML = 'creating svg...'
+			recreate(msg.polygons)
+			break
+		}
+	}
+
+	worker.postMessage({
+		image: {
+			width: w,
+			height: h,
+			data: imgdata.data.buffer
+		}
+	}, [imgdata.data.buffer])
+}
+
+function uint32ToRGBA (color) {
+	var c = new Uint8Array((new Uint32Array([color])).buffer)
+
+	return 'rgba(' + [].slice.call(c, 0, 3).join(',') + ',' +
+		(c[3] / 255) + ')'
+}
+
+function createImage (e) {
+	var img = new Image()
+	img.src = e.target.result
+
+	img.onload = vectorize
+}
+
+function dropFiles (e) {
+	e.preventDefault()
+
+	var files = e.dataTransfer.files
+	var i = files.length
+
+	while (i--) {
+		var file = files[i]
+
+		if (!~file.type.indexOf('image')) continue
+
+		var reader = new FileReader()
+		reader.readAsDataURL(file)
+
+		reader.onload = createImage
+
+		return
+	}
+}
+
+function drawPolygon (polygon) {
+	SVGAddPath(this, new Float64Array(polygon.path),
+		uint32ToRGBA(polygon.color))
+}
+
+function recreate (polygons) {
+	var svg = createSVG(w, h)
+
+	polygons.forEach(drawPolygon.bind(svg))
+
+	var src = svg.outerHTML
+
+	document.body.innerHTML = src
+}
+
+window.addEventListener('dragover', function (e) { e.preventDefault() }, false)
+window.addEventListener('drop', dropFiles, false)
+	</script>
+</body>
+</html>
