@@ -9,13 +9,13 @@ function reportProgress (operation, amount) {
 function splitImage (img, partCount) {
 	reportProgress('split', 0.0)
 
-	var partHeight = ~~(img.height / parts)
+	var partHeight = ~~(img.height / partCount)
 	var partSize = 4 * img.width * partHeight
 	var data = new Uint8Array(img.data)
 	var parts = []
 	var part, i, o
 
-	for (i=0, o=0; i<parts-1; i++, o+=partSize) {
+	for (i=0, o=0; i<partCount-1; i++, o+=partSize) {
 		part = {
 			top: i * partHeight,
 			width: img.width,
@@ -27,7 +27,7 @@ function splitImage (img, partCount) {
 
 		parts.push({
 			image: part,
-			amount: part.data.byteLength / data.length
+			amount: part.data.byteLength / 4 / data.length
 		})
 	}
 
@@ -42,7 +42,7 @@ function splitImage (img, partCount) {
 
 	parts.push({
 		image: part,
-		amount: part.data.byteLength / data.length
+		amount: part.data.byteLength / 4 / data.length
 	})
 
 	reportProgress('split', 1.0)
@@ -119,7 +119,7 @@ function offload (img) {
 }
 
 this.onmessage = function (e) {
-	var workerCount = 4
+	var workerCount = 8
 
 	var context = {}
 
